@@ -1,0 +1,7 @@
+#RegisterService.srv
+
+# 등록 요청 장비
+string type
+string uuid
+---
+string topic_namespace

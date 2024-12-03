@@ -1,0 +1,14 @@
+#OperationState.srv
+
+# 플랫폼 상태 설정 (종료, 비상)
+# 0: initalize 
+# 1: operational 
+# 2: shutdown 
+# 3: system abort
+# 4: emergency 
+# 5: render_useless"
+uint8 operation_state
+
+---
+
+bool operation_state_response

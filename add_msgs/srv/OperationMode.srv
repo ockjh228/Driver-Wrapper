@@ -1,0 +1,11 @@
+#OperationMode.srv
+
+# 플랫폼 모드 설정
+# 0: inactive
+# 1: active
+# 2: standard_operating
+# 3: training
+# 4: maintenance
+uint8 operation_mode
+---
+bool operation_mode_response
