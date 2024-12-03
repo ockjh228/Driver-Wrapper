@@ -1,0 +1,3 @@
+set-if-unset;RMW_IMPLEMENTATION;rmw_fastrtps_cpp
+set-if-unset;FASTRTPS_DEFAULT_PROFILES_FILE;@CMAKE_INSTALL_PREFIX@/share/@PROJECT_NAME@/config/dds_config.xml
+set-if-unset;RMW_FASTRTPS_USE_QOS_FROM_XML;1

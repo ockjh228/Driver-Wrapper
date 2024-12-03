@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+    <participant profile_name="my_project_profile" is_default_profile="true">
+        <rtps>
+            <name>my_project_profile_context</name>
+        </rtps>
+    </participant>
+
+    <publisher profile_name="default_publisher" is_default_profile="true">
+        <historyMemoryPolicy>DYNAMIC</historyMemoryPolicy>
+    </publisher>
+
+    <!-- publisher profile for SENSOR topics -->
+    <publisher profile_name="/msg1">
+        <qos>
+            <publishMode>
+                <kind>ASYNCHRONOUS</kind> 
+            </publishMode>
+            <reliability>
+                <kind>BEST_EFFORT</kind>
+            </reliability>
+            <durability>
+                <kind>VOLATILE</kind>
+            </durability>
+        </qos>
+        <topic>
+            <name>/msg1</name>
+                <historyQos>
+                    <kind>KEEP_LAST</kind>
+                    <depth>1</depth>
+                </historyQos>
+        </topic>
+        <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    </publisher>
+    
+    <!-- publisher profile for CONTROL topics -->
+    <publisher profile_name="/msg2">
+        <qos>
+            <publishMode>
+                <kind>SYNCHRONOUS</kind> 
+            </publishMode>
+            <reliability>
+                <kind>RELIABLE</kind>
+            </reliability>
+        </qos>
+        <topic>
+            <name>/msg2</name>
+                <historyQos>
+                    <kind>KEEP_LAST</kind>
+                    <depth>1</depth>
+                </historyQos>
+        </topic>
+        <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    </publisher>
+
+    <subscriber profile_name="default_subscriber" is_default_profile="true">
+        <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    </subscriber>
+
+</profiles>

@@ -1,0 +1,19 @@
+image: acelabdev/runner:melodic
+
+cache:
+  paths:
+    - ccache/
+
+before_script:
+  - git clone /env/ros_gitlab_ci
+  - source ros_gitlab_ci/gitlab-ci.bash >/dev/null
+
+build and test:
+  stage: test
+  script:
+    - catkin run_tests
+  artifacts:
+    paths:
+      - 'catkin_workspace/build'
+      - 'catkin_workspace/devel'
+    expire_in: 4 hrs

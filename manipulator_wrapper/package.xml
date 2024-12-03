@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>manipulator_wrapper</name>
+  <version>0.0.0</version>
+  <description>The template package</description>
+
+  <maintainer email="kyungpyo.kim@acelab.ai">kyungpyo kim</maintainer>
+  
+  <license>ACELAB</license>
+
+  <depend condition="$ROS_VERSION == 1">catkin</depend>
+  <depend condition="$ROS_VERSION == 2">ament_cmake</depend>
+  
+  <depend condition="$ROS_VERSION == 1">roscpp</depend>
+  <depend condition="$ROS_VERSION == 2">rclcpp</depend>
+  
+  <depend>std_msgs</depend>
+  <depend>brain_msgs</depend>
+  <depend>brain_system_msgs</depend>
+  <depend>brain_sensor_msgs</depend>
+  <depend>brain_license</depend>
+  <depend>health_checker</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
+  
+  <export>
+    <build_type condition="$ROS_VERSION == 1">catkin</build_type>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+  </export>
+</package>

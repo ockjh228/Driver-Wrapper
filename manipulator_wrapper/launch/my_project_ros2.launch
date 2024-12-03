@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<!-- using args, pass parameter path and logging directory -->
+<launch>
+  <node pkg="my_project"
+    exec="my_project"
+    name="node"
+    namespace="my_project"
+    output="screen"
+    args="$(find-pkg-share my_project)/config/parameter.yaml $(find-pkg-share my_project)/log">
+  </node>
+</launch>

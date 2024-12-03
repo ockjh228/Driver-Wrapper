@@ -1,0 +1,3 @@
+[submodule "include/my_project/base"]
+	path = include/my_project/base
+	url = http://git.acelab.ai:8080/acelab/ad/app/utils/base.git

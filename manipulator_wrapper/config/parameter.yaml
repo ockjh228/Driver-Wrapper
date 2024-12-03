@@ -1,0 +1,60 @@
+system:
+  verbosity: err                             # Trace
+  task:
+    period: 1.
+    num_spin_thread: 2                       # Number of threads to have in the thread pool, the default 0 will use the number of cpu cores found instead
+  # node_name: "manipulator_driver_wrapper"
+    node_name: "manipulator_kit"
+  domain_ids: [0, 1]
+  # device_id: "manipulator_driver_wrapper"
+  device_id: "manipulator_kit"
+  pnp_manager_enable: true   
+
+  publish:
+    emergency_stop: "/emergency_stop_cmd"                       # Publishing to "Kinova Driver"
+    clear_fault: "/clear_faults_cmd"                            # Publishing to "Kinova Driver"
+    remote_cmd: "/twist_remote_cmd"                             # Publishing to "Kinova Driver"
+    joint_cmd: "/joint_angle_info"                              # Publishing to "Kinova Driver"
+    gripper_cmd: "/gripper_command_cmd"                         # Publishing to "Kinova Driver"
+    preset_target: "/action"                                    # Publishing to "Kinova Driver"
+    create_preset: "/create_action"                             # Publishing to "Kinova Driver"
+    delete_preset: "/delete_action"                             # Publishing to "Kinova Driver"
+    create_protection_zone: "/protection_zone"                  # Publishing to "Kinova Driver"
+    delete_protection_zone: "/protection_zone"                  # Publishing to "Kinova Driver"
+    update_protection_zone: "/protection_zone"                  # Publishing to "Kinova Driver"
+
+    safety_check: "/status/manipulator/safety_check"            # Publishing to "Remote Controller"
+    manipulator_status: "/status/manipulator/info"              # Publishing to "Remote Controller"
+    preset_info: "/status/preset/info"                          # Publishing to "Remote Controller"
+    protection_zone_info: "/status/protection_zone/info"        # Publishing to "Remote Controller"
+
+
+  subscribe:
+    emergency_stop: "/command/e_stop"                           # From "Remote Controller"
+    clear_fault: "/command/clear"                               # From "Remote Controller"
+    remote_cmd: "/command/twist"                                # From "Remote Controller"
+    joint_cmd: "/command/joint"                                 # From "Remote Controller"
+    gripper_cmd: "/command/gripper"                             # From "Remote Controller"
+    preset_target: "/command/preset"                            # From "Remote Controller"
+    create_preset: "/command/preset/create"                     # From "Remote Controller"
+    delete_preset: "/command/preset/delete"                     # From "Remote Controller"
+    create_protection_zone: "/command/protection_zone/create"   # From "Remote Controller"    
+    delete_protection_zone: "/command/protection_zone/delete"   # From "Remote Controller"
+    update_protection_zone: "/command/protection_zone"          # From "Remote Controller"
+
+    status: "/current_status"                                   # From "Kinova Driver" 
+    state: "/current_state"                                     # From "Kinova Driver" 
+    action_list: "/action_list"                                 # From "Kinova Driver" 
+    protection_zone_list: "/protection_zone_list"               # From "Kinova Driver" 
+    preset_info: "/action_info"                                 # From "Kinova Driver" 
+    protection_zone_info: "protection_zone_info"                # From "Kinova Driver" 
+    safety_check: "/check_safety"                               # From "Kinova Driver" 
+
+  service:
+    register_service: "/add/device/register"
+
+runtime:
+  a: 2
+  b: test
+
+

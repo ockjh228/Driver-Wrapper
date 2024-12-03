@@ -1,0 +1,26 @@
+fail_fast: false
+repos:
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+      - id: clang-format
+        name: clang-format
+        description: Format C/C++ code using clang-format.
+        language: system
+        files: \.(c|cc|cxx|cpp|h|hpp|hxx)$
+        entry: clang-format -i
+        args: ["-style={BasedOnStyle: Google, AccessModifierOffset: -2, PointerAlignment: Middle, ColumnLimit: 80, AlignAfterOpenBracket: Align, AlignConsecutiveMacros: true,  AlignTrailingComments: true, AllowAllArgumentsOnNextLine: true, AlignOperands: true, ContinuationIndentWidth: 2, IncludeBlocks: Regroup, SortIncludes: true, SortUsingDeclarations: true, SpacesBeforeTrailingComments: 2, BinPackArguments: false, BinPackParameters: false }"]
+      - id: cpplint
+      - id: cppcheck
+        name: cppcheck
+        description: Check correctness of C code using cppcheck.
+        language: system
+        files: \.(c|cc|cxx|cpp|h|hpp|hxx)$
+        entry: cppcheck --error-exitcode=1
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
