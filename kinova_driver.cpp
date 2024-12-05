@@ -8,6 +8,11 @@
 #include <atomic>
 #include <map>
 #include <set>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <cerrno>
 
 #include <BaseClientRpc.h>
 #include <BaseCyclicClientRpc.h>
@@ -25,7 +30,6 @@
 #include <control_msgs/msg/gripper_command.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
 
-// #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "kinova_msgs/msg/protection_zone.hpp"
 #include "kinova_msgs/msg/protection_zone_handle.hpp"
 #include "kinova_msgs/msg/zone_shape.hpp"
@@ -244,8 +248,20 @@ private:
   bool check_protection_zone()
   {
     // Get Current Joint Angles
-    k_api::Base::JointAngles current_joint_angles = base_->GetMeasuredJointAngles();
-    int num_joints = current_joint_angles.joint_angles_size();
+    int num_joints = 0;
+    k_api::Base::JointAngles current_joint_angles;
+    try
+    {
+      current_joint_angles = base_->GetMeasuredJointAngles();
+      num_joints = current_joint_angles.joint_angles_size();
+      /* code */
+    }
+    catch(const std::exception& e)
+    {
+      std::cerr << e.what() << '\n';
+      return false;
+    }
+    
 
     // Verify if the number of joints in the robot matches the number of joints in the KDL chain
     if (num_joints != kdl_chain_.getNrOfJoints())
@@ -781,7 +797,6 @@ private:
       // Create unordered set to save current action
       std::unordered_set<std::string> current_action_names;
 
-      
       for (const auto &action : action_list.action_list())
       {
           // Save the names of all current actions
@@ -840,7 +855,7 @@ private:
                         // }
 
                       // Compute Forward kinematics for the given joint angles
-                      auto calculated_pose = base_->ComputeForwardKinematics(joint_angles);
+                      auto calculated_pose = base_->ComputeForwardKinematics(joint_angles, 0 ,{false, 0, 7000});
 
                       // Add the calculated pose to the message
                       action_info_msg.pose = {calculated_pose.x(), calculated_pose.y(), calculated_pose.z(),
@@ -1054,7 +1069,12 @@ public:
   }
 
 private:
-  // Action Creater Callback (Create Preset)
+  /**
+     * @brief Action(Preset) Creater Callback
+     *        Create action(preset) by command
+     * 
+     * @param msg Action's information to create (Action(preset) name, each joint angles)
+   */
   void action_creater_callback(const kinova_msgs::msg::CreateAction::SharedPtr msg)
   {
     k_api::Base::Action action;
@@ -1080,7 +1100,11 @@ private:
     return;
   }
 
-  // Action(Preset) Remover Callback
+  /**
+     * @brief Action(preset) Remover Callback
+     * 
+     * @param msg Action's name to delete (Action(Preset) name)
+   */
   void action_remover_callback(const std_msgs::msg::String::SharedPtr msg)
   {
     auto action_type = k_api::Base::RequestedActionType();
@@ -1099,7 +1123,11 @@ private:
     }
   }
 
-  // Action(Preset) Callback Caller -> Preset Target Command which means, Do selected Action!
+  /**
+     * @brief "move_to_preset_position" callback caller -> Do Selected Action
+     * 
+     * @param msg Action(Preset)'s name to execute
+   */
   void action_callback(const std_msgs::msg::String::SharedPtr msg)
   {
     if (estop_active_){
@@ -1365,7 +1393,16 @@ private:
     }
   }
 
-  // Gripper Control
+   /**
+     * @brief Protection zone Cmd by topic msg (Create Protection Zone & Delete Protection Zone by mode field)
+     * 
+     * @param msg Topic Msg that contains information about Protection Zone Cmd(3 modes) from Remote Controller.
+     * 
+     *  Modes
+     *  1. mode 1 = Create Protection Zone (Zone Name, Shape type, is_enabled, origin, dimension, orientation, envelope thickness, target speed)
+     *  2. mode 2 = Delete Protection Zone (Name)
+     *  3. mode 3 = Update Protection Zone (Name, is_enabled)
+   */
   void gripper_callback(const control_msgs::msg::GripperCommand::SharedPtr msg)
   {
     try
@@ -1411,8 +1448,8 @@ private:
   // Set Emergency Stop Control to Robot
   void estop_callback(const std_msgs::msg::Bool::SharedPtr)
   {
-    base_->ApplyEmergencyStop(0, {true, 0, 100});
-    base_->ApplyEmergencyStop(0, {true, 0, 100});
+    base_->ApplyEmergencyStop(0, {true, 0, 1000});
+    base_->ApplyEmergencyStop(0, {true, 0, 1000});
     estop_active_ = true;
   }
 
@@ -1472,7 +1509,16 @@ private:
     }
   }
 
-  // Protection zone Cmd by topic msg (Create Protection Zone & Delete Protection Zone by mode field)
+   /**
+     * @brief Protection zone Cmd by topic msg (Create Protection Zone & Delete Protection Zone by mode field)
+     * 
+     * @param msg Topic Msg that contains information about Protection Zone Cmd(3 modes) from Remote Controller.
+     * 
+     *  Modes
+     *  1. mode 1 = Create Protection Zone (Zone Name, Shape type, is_enabled, origin, dimension, orientation, envelope thickness, target speed)
+     *  2. mode 2 = Delete Protection Zone (Name)
+     *  3. mode 3 = Update Protection Zone (Name, is_enabled)
+   */
   void protection_zone_callback(kinova_msgs::msg::ProtectionZone::SharedPtr msg)
   {
       k_api::Base::ProtectionZone zone;
@@ -1664,6 +1710,90 @@ private:
 
 ControlNode *ControlNode::instance_ = nullptr;
 
+/**
+ * @brief Chcek connection between TCP port and Robot
+ * 
+ * @param ip = Kinova Kortex's Robot Ip (fixed) = 192.168.1.10
+ * @param port = Port 100000 (Defined in the header section)
+ * @param timeout_sec = Maximum time trial to connect to TCP Port
+ * @return true = Connection Succesful between the Robot and Driver
+ * @return false = Connection Unsuccesful between the Robot and Driver
+ */
+bool isTcpPortOpen(const std::string& ip, int port, int timeout_sec) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if(sock < 0) {
+        std::cerr << "Socket creation error: " << strerror(errno) << std::endl;
+        return false;
+    }
+
+    // Set Socket as Nonblocking mode
+    int flags = fcntl(sock, F_GETFL, 0);
+    if(flags < 0) {
+        std::cerr << "fcntl(F_GETFL) error: " << strerror(errno) << std::endl;
+        close(sock);
+        return false;
+    }
+
+    if(fcntl(sock, F_SETFL, flags | O_NONBLOCK) < 0) {
+        std::cerr << "fcntl(F_SETFL) error: " << strerror(errno) << std::endl;
+        close(sock);
+        return false;
+    }
+
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    if(inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) <= 0) {
+        std::cerr << "Invalid IP address: " << ip << std::endl;
+        close(sock);
+        return false;
+    }
+
+    int ret = connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+    if(ret < 0) {
+        if(errno != EINPROGRESS) {
+            // Failure on Connection
+            close(sock);
+            return false;
+        }
+    }
+
+    fd_set fdset;
+    struct timeval tv;
+
+    FD_ZERO(&fdset);
+    FD_SET(sock, &fdset);
+    tv.tv_sec = timeout_sec;
+    tv.tv_usec = 0;
+
+    // Use Select to check possibility to connect
+    ret = select(sock + 1, NULL, &fdset, NULL, &tv);
+    if(ret > 0) {
+        int so_error;
+        socklen_t len = sizeof(so_error);
+
+        getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len);
+        if(so_error == 0) {
+            // Succeed in connection
+            close(sock);
+            return true;
+        } else {
+            // Failed in connection
+            close(sock);
+            return false;
+        }
+    } else if(ret == 0) {
+        // Timeout
+        close(sock);
+        return false;
+    } else {
+        // select error
+        std::cerr << "select error: " << strerror(errno) << std::endl;
+        close(sock);
+        return false;
+    }
+}
+
 int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
@@ -1673,6 +1803,39 @@ int main(int argc, char **argv)
   // username : admin
   // password : admin
   auto parsed_args = ParseExampleArguments(argc, argv);
+
+  bool ping_success = false;
+
+  while(rclcpp::ok() && !ping_success) {
+      // Create Ping Command (ICMP packey 1, timeout 1s)
+      std::string command = "ping -c 1 -W 1 " + parsed_args.ip_address + " > /dev/null 2>&1";
+
+      // Run System Command
+      int ret = std::system(command.c_str());
+
+      if(ret == 0) {
+          std::cout << "Ping to " << parsed_args.ip_address << " succeeded." << std::endl;
+          ping_success = true;
+      } else {
+          std::cout << "Ping to " << parsed_args.ip_address << " failed. Retrying in 3 seconds..." << std::endl;
+          std::this_thread::sleep_for(std::chrono::seconds(3));
+      }
+  }
+
+
+int port = 10000; // Robot's TCP port num 10000
+int timeout_sec = 1; // Timeout Setting
+bool port_open = false;
+
+while(rclcpp::ok() && !port_open) {
+    if(isTcpPortOpen(parsed_args.ip_address, port, timeout_sec)) {
+        std::cout << "TCP port " << port << " on " << parsed_args.ip_address << " is open." << std::endl;
+        port_open = true;
+    } else {
+        std::cout << "Cannot connect to TCP port " << port << " on " << parsed_args.ip_address << ". Retrying in 3 seconds..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+    }
+}
 
   // Create API objects to communicate with Kinova Kortex gen 3
   auto error_callback = [](k_api::KError err)
@@ -1698,6 +1861,20 @@ int main(int argc, char **argv)
 
   // Create Service clients for Base and BaseCyclic APIs
   auto base = new k_api::Base::BaseClient(router);
+  bool ready_to_use = false;
+
+  /**
+   * @brief 40seconds needed to ready the robot. When Robot is booting on, arm state is changing 3 -> 7
+   *  Arm State 3: Initialization
+   *            7: Servoing Ready
+   *  When Armstate begun "7(Servoing Ready)" driver is able to connect between the Robot and Driver 
+   */
+  while(rclcpp::ok() && !(base->GetArmState().active_state() == 7)){
+      std::cout << "robot is not ready to use. \n";
+  }
+  std::cout << "robot is ready to use. \n";
+
+
   auto base_cyclic = new k_api::BaseCyclic::BaseCyclicClient(router);
 
   // Create Two nodes "Publishing" Robot's State & control after "Subscribing" Remote Controller's Cmd. 
